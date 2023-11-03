@@ -57,12 +57,12 @@
 #define DEBUG_DUMP(qf) \
 	do { if (PRINT_DEBUG) qf_dump_metadata(qf); } while (0)
 
-static __inline__ unsigned long long rdtsc(void)
-{
-	unsigned hi, lo;
-	__asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
-	return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
-}
+// static __inline__ unsigned long long rdtsc(void)
+// {
+// 	unsigned hi, lo;
+// 	__asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+// 	return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
+// }
 
 #ifdef LOG_WAIT_TIME
 static inline bool qf_spin_lock(QF *qf, volatile int *lock, uint64_t idx,
@@ -264,11 +264,22 @@ static void modify_metadata(pc_t *metadata, int cnt)
 
 static inline int popcnt(uint64_t val)
 {
+#ifdef NOASM
+
+	int count = 0;
+
+	for (int i = 0; i < 64; i++) {
+		count += (val >> i) & 1;
+	}
+	return count;
+
+#else
 	asm("popcnt %[val], %[val]"
 			: [val] "+r" (val)
 			:
 			: "cc");
 	return val;
+#endif
 }
 
 static inline int64_t bitscanreverse(uint64_t val)
@@ -276,11 +287,20 @@ static inline int64_t bitscanreverse(uint64_t val)
 	if (val == 0) {
 		return -1;
 	} else {
+#ifdef NOASM
+		for (int i=63; i >= 0; i--) {
+			if ((val >> i & 1) == 1) {
+				return i;
+			}
+		}
+		return 0;
+#else
 		asm("bsr %[val], %[val]"
 				: [val] "+r" (val)
 				:
 				: "cc");
 		return val;
+#endif
 	}
 }
 
@@ -296,11 +316,12 @@ static inline int popcntv(const uint64_t val, int ignore)
 // Bits are numbered from 0
 static inline int bitrank(uint64_t val, int pos) {
 	val = val & ((2ULL << pos) - 1);
-	asm("popcnt %[val], %[val]"
-			: [val] "+r" (val)
-			:
-			: "cc");
-	return val;
+	return popcnt(val);
+	// asm("popcnt %[val], %[val]"
+	// 		: [val] "+r" (val)
+	// 		:
+	// 		: "cc");
+	// return val;
 }
 
 /**

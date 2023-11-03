@@ -5,7 +5,7 @@ ifdef D
 	OPT=
 else
 	DEBUG=
-	OPT=-Ofast
+	OPT=-O3
 endif
 
 ifdef NH
@@ -13,6 +13,14 @@ ifdef NH
 else
 	ARCH=-msse4.2 -D__SSE4_2_
 endif
+
+ifdef NOASM
+	NOASM_FLAG=-DNOASM
+	ARCH=
+else
+	NOASM_FLAG=
+endif
+
 
 ifdef P
 	PROFILE=-pg -no-pie # for bug in gprof.
@@ -27,7 +35,7 @@ CC = gcc -std=gnu11
 CXX = g++ -std=c++11
 LD= gcc -std=gnu11
 
-CXXFLAGS = -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. -Iinclude
+CXXFLAGS = -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) $(NOASM_FLAG) -m64 -I. -Iinclude
 
 LDFLAGS = $(DEBUG) $(PROFILE) $(OPT) -lpthread -lssl -lcrypto -lm
 
